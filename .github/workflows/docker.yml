@@ -5,6 +5,8 @@ on:
     branches:
       - unstable
       - stable
+      - testnet
+      - mainnet
     tags:
       - v*
 
@@ -15,7 +17,7 @@ env:
 
 jobs:
   # Extract the VERSION which is either `latest` or `vX.Y.Z`, and the VERSION_SUFFIX
-  # which is either empty or `-unstable`.
+  # which is empty, `-unstable`, `-testnet`, or `-mainnet`.
   #
   # It would be nice if the arch didn't get spliced into the version between `latest` and
   # `unstable`, but for now we keep the two parts of the version separate for backwards
@@ -38,6 +40,16 @@ jobs:
         run: |
           echo "VERSION=$(echo ${GITHUB_REF#refs/tags/})" >> $GITHUB_ENV
           echo "VERSION_SUFFIX=" >> $GITHUB_ENV
+      - name: Extract version (if testnet)
+        if: github.event.ref == 'refs/heads/testnet'
+        run: |
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "VERSION_SUFFIX=-testnet" >> $GITHUB_ENV
+      - name: Extract version (if mainnet)
+        if: github.event.ref == 'refs/heads/mainnet'
+        run: |
+          echo "VERSION=latest" >> $GITHUB_ENV
+          echo "VERSION_SUFFIX=-mainnet" >> $GITHUB_ENV
     outputs:
       VERSION: ${{ env.VERSION }}
       VERSION_SUFFIX: ${{ env.VERSION_SUFFIX }}
@@ -67,11 +79,29 @@ jobs:
       - name: Map x86_64 to amd64 short arch
         if: startsWith(matrix.binary, 'x86_64')
         run: echo "SHORT_ARCH=amd64" >> $GITHUB_ENV;
+      - name: Set Docker build args (chain / RPC)
+        run: |
+          case "${GITHUB_REF}" in
+            refs/heads/testnet)
+              echo "NEXT_PUBLIC_TESTNET_CHAIN_ID=72080" >> $GITHUB_ENV
+              echo "NEXT_PUBLIC_TESTNET_RPC=https://rpc.testnet.nexera.network" >> $GITHUB_ENV
+              ;;
+            refs/heads/mainnet)
+              echo "NEXT_PUBLIC_TESTNET_CHAIN_ID=7208" >> $GITHUB_ENV
+              echo "NEXT_PUBLIC_TESTNET_RPC=https://rpc.nexera.network" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "NEXT_PUBLIC_TESTNET_CHAIN_ID=72080" >> $GITHUB_ENV
+              echo "NEXT_PUBLIC_TESTNET_RPC=https://rpc.testnet.nexera.network" >> $GITHUB_ENV
+              ;;
+          esac
       - name: Build Dockerfile and push
         run: |
           docker buildx build \
               --platform=linux/${SHORT_ARCH} \
               --file ./Dockerfile . \
+              --build-arg NEXT_PUBLIC_TESTNET_CHAIN_ID=${NEXT_PUBLIC_TESTNET_CHAIN_ID} \
+              --build-arg NEXT_PUBLIC_TESTNET_RPC=${NEXT_PUBLIC_TESTNET_RPC} \
               --tag ${IMAGE_NAME}:${VERSION}-${SHORT_ARCH}${VERSION_SUFFIX} \
               --push
 

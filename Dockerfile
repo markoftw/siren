@@ -3,8 +3,13 @@ ARG node_image=node:${node_version}
 
 FROM $node_image AS builder
 
+ARG NEXT_PUBLIC_TESTNET_CHAIN_ID
+ARG NEXT_PUBLIC_TESTNET_RPC
+
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=development
+    NODE_ENV=development \
+    NEXT_PUBLIC_TESTNET_CHAIN_ID=$NEXT_PUBLIC_TESTNET_CHAIN_ID \
+    NEXT_PUBLIC_TESTNET_RPC=$NEXT_PUBLIC_TESTNET_RPC
 # Install git for commit hash generation for docker built image
 RUN apt-get update && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
 WORKDIR /app

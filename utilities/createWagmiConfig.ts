@@ -12,6 +12,14 @@ const nativeCurrency = { name: 'Ether', symbol: 'ETH', decimals: 18 }
 const altHoodiTestnetRpc = process.env.NEXT_PUBLIC_HOODI_TESTNET_RPC
 
 const createWagmiConfig = () => {
+  const customChainEnabled = Boolean(localChainId && localRpc)
+  console.info('[Siren] wagmi env', {
+    NEXT_PUBLIC_TESTNET_CHAIN_ID: process.env.NEXT_PUBLIC_TESTNET_CHAIN_ID ?? '(unset)',
+    NEXT_PUBLIC_TESTNET_RPC: process.env.NEXT_PUBLIC_TESTNET_RPC ?? '(unset)',
+    parsedChainId: localChainId ?? '(none)',
+    customLocalChainRegistered: customChainEnabled,
+  })
+
   const hoodi = defineChain({
     id: 560048,
     name: 'Hoodi testnet',

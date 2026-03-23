@@ -25,12 +25,7 @@ const fetchFromApiWithRetry = async (
   options?: NextFetchRequestInit,
   retryOptions: RetryOptions = {},
 ) => {
-  const {
-    maxRetries = 3,
-    initialDelay = 1000,
-    maxDelay = 10000,
-    timeout = 10000,
-  } = retryOptions
+  const { maxRetries = 3, initialDelay = 1000, maxDelay = 10000, timeout = 10000 } = retryOptions
 
   const defaultOptions: RequestInit = {
     method: 'GET',
@@ -67,10 +62,7 @@ const fetchFromApiWithRetry = async (
 
       // Don't retry on abort errors if it's the last attempt
       if (attempt === maxRetries) {
-        console.error(
-          `Failed to fetch ${url} after ${maxRetries + 1} attempts:`,
-          e.message || e,
-        )
+        console.error(`Failed to fetch ${url} after ${maxRetries + 1} attempts:`, e.message || e)
         throw e
       }
 
