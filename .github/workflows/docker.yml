@@ -56,10 +56,16 @@ jobs:
 
   build-docker-single-arch:
     name: build-docker-${{ matrix.binary }}
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        binary: [aarch64, x86_64]
+        include:
+          - binary: aarch64
+            short_arch: arm64
+            runner: ubuntu-22.04-arm
+          - binary: x86_64
+            short_arch: amd64
+            runner: ubuntu-22.04
 
     needs: [extract-version]
     env:
@@ -69,16 +75,9 @@ jobs:
       VERSION_SUFFIX: ${{ needs.extract-version.outputs.VERSION_SUFFIX }}
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
       - name: Dockerhub login
         run: |
           echo "${DOCKER_PASSWORD}" | docker login --username ${DOCKER_USERNAME} --password-stdin
-      - name: Map aarch64 to arm64 short arch
-        if: startsWith(matrix.binary, 'aarch64')
-        run: echo "SHORT_ARCH=arm64" >> $GITHUB_ENV
-      - name: Map x86_64 to amd64 short arch
-        if: startsWith(matrix.binary, 'x86_64')
-        run: echo "SHORT_ARCH=amd64" >> $GITHUB_ENV;
       - name: Set Docker build args (chain / RPC)
         run: |
           case "${GITHUB_REF}" in
@@ -98,11 +97,11 @@ jobs:
       - name: Build Dockerfile and push
         run: |
           docker buildx build \
-              --platform=linux/${SHORT_ARCH} \
+              --platform=linux/${{ matrix.short_arch }} \
               --file ./Dockerfile . \
               --build-arg NEXT_PUBLIC_TESTNET_CHAIN_ID=${NEXT_PUBLIC_TESTNET_CHAIN_ID} \
               --build-arg NEXT_PUBLIC_TESTNET_RPC=${NEXT_PUBLIC_TESTNET_RPC} \
-              --tag ${IMAGE_NAME}:${VERSION}-${SHORT_ARCH}${VERSION_SUFFIX} \
+              --tag ${IMAGE_NAME}:${VERSION}-${{ matrix.short_arch }}${VERSION_SUFFIX} \
               --push
 
   build-docker-multiarch:
